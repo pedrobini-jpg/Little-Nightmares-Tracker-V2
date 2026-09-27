@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Nightmares I & II — Rastreador de Conquistas</title>
+<style>
+  :root{
+    --bg:#0b0b10;
+    --panel:#15151d;
+    --panel2:#1c1c26;
+    --border:#2b2b38;
+    --text:#e9e6df;
+    --muted:#9a97a8;
+    --accent:#c9a24b;
+    --accent2:#7b5fd1;
+    --good:#5cb87a;
+    --bad:#c9503f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(ellipse at top, #1a1a24 0%, #0b0b10 60%);
+    color:var(--text);
+    padding-bottom:60px;
+  }
+  header{
+    padding:28px 20px 18px;
+    text-align:center;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg, rgba(201,162,75,0.08), transparent);
+  }
+  header h1{
+    margin:0 0 6px;
+    font-size:1.6rem;
+    letter-spacing:1px;
+    color:var(--accent);
+    text-shadow:0 0 12px rgba(201,162,75,0.35);
+  }
+  header p{margin:0;color:var(--muted);font-size:0.9rem}
+
+  .overview{
+    max-width:900px;
+    margin:20px auto;
+    padding:0 16px;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:12px;
+  }
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+  }
+  .card h3{margin:0 0 8px;font-size:0.95rem;color:var(--text);display:flex;justify-content:space-between}
+  .card h3 span.pct{color:var(--accent);font-weight:700}
+  .bar{height:9px;border-radius:6px;background:#000;overflow:hidden;border:1px solid var(--border)}
+  .bar > div{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .3s}
+  .card small{color:var(--muted);display:block;margin-top:6px}
+
+  .tabs{
+    max-width:900px;margin:24px auto 0;padding:0 16px;
+    display:flex;gap:8px;flex-wrap:wrap;
+  }
+  .tab-btn{
+    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    padding:9px 16px;border-radius:999px;cursor:pointer;font-size:0.85rem;transition:.2s;
+  }
+  .tab-btn.active{background:var(--accent);color:#1a1500;border-color:var(--accent);font-weight:600}
+
+  main{max-width:900px;margin:16px auto;padding:0 16px}
+  .game-block{display:none}
+  .game-block.active{display:block}
+
+  .section{margin-bottom:26px}
+  .section-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;padding-bottom:6px;border-bottom:1px dashed var(--border);
+  }
+  .section-head h2{font-size:1.05rem;margin:0;color:var(--accent2)}
+  .section-head .count{font-size:0.8rem;color:var(--muted)}
+
+  .ach{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:8px;
+    transition:.2s;
+  }
+  .ach.done{border-color:rgba(92,184,122,0.5);background:linear-gradient(90deg, rgba(92,184,122,0.08), var(--panel) 30%)}
+  .ach-top{display:flex;align-items:flex-start;gap:12px}
+  .chk{
+    flex:0 0 auto;width:24px;height:24px;border-radius:6px;border:2px solid var(--border);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;background:#000;margin-top:2px;
+    font-size:14px;color:transparent;user-select:none;
+  }
+  .ach.done .chk{background:var(--good);border-color:var(--good);color:#062b0f}
+  .ach-body{flex:1;min-width:0}
+  .ach-name{font-weight:600;font-size:0.98rem}
+  .ach-name .gs{color:var(--accent);font-weight:400;font-size:0.8rem;margin-left:6px}
+  .ach-desc{color:var(--muted);font-size:0.85rem;font-style:italic;margin-top:2px}
+  .ach-actions{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .tip-btn{
+    background:none;border:1px solid var(--accent2);color:var(--accent2);
+    font-size:0.75rem;padding:4px 10px;border-radius:999px;cursor:pointer;
+  }
+  .tip-btn:hover{background:var(--accent2);color:#fff}
+  .del-btn{
+    background:none;border:1px solid var(--bad);color:var(--bad);
+    font-size:0.75rem;padding:4px 10px;border-radius:999px;cursor:pointer;
+  }
+  .tip-box{
+    display:none;margin-top:8px;padding:10px 12px;background:#0e0e14;border-left:3px solid var(--accent2);
+    border-radius:6px;font-size:0.85rem;color:#c9c6d8;line-height:1.4;
+  }
+  .tip-box.show{display:block}
+
+  .add-form{
+    margin-top:10px;background:var(--panel2);border:1px dashed var(--border);border-radius:10px;padding:12px;
+  }
+  .add-form input, .add-form textarea{
+    width:100%;background:#0e0e14;border:1px solid var(--border);color:var(--text);
+    border-radius:6px;padding:8px;margin-bottom:8px;font-family:inherit;font-size:0.85rem;
+  }
+  .add-form button{
+    background:var(--accent);border:none;color:#1a1500;padding:8px 16px;border-radius:6px;
+    cursor:pointer;font-weight:600;font-size:0.85rem;
+  }
+  .add-toggle{
+    background:none;border:1px solid var(--muted);color:var(--muted);padding:6px 12px;
+    border-radius:999px;cursor:pointer;font-size:0.8rem;margin-top:6px;
+  }
+  footer{text-align:center;color:var(--muted);font-size:0.75rem;margin-top:40px;padding:0 16px}
+  .reset-btn{
+    background:none;border:1px solid var(--bad);color:var(--bad);padding:6px 14px;border-radius:999px;
+    font-size:0.75rem;cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌑 LITTLE NIGHTMARES — RASTREADOR DE CONQUISTAS</h1>
+  <p>Little Nightmares I & II · Xbox · progresso salvo automaticamente neste navegador</p>
+</header>
+
+<div class="overview" id="overview"></div>
+
+<div class="tabs" id="tabs">
+  <button class="tab-btn active" data-game="ln1">Little Nightmares I</button>
+  <button class="tab-btn" data-game="ln2">Little Nightmares II</button>
+</div>
+
+<main id="main"></main>
+
+<footer>
+  <p>Dica: clique no quadrado para marcar/desmarcar. As descrições são as oficiais das conquistas; a "Dica" mostra como conseguir (pode conter spoilers).</p>
+  <button class="reset-btn" onclick="resetAll()">Zerar todo o progresso</button>
+</footer>
+
+<script>
+// ===================== DADOS =====================
+const DATA = {
+  ln1: {
+    label: "Little Nightmares I",
+    sections: [
+      {
+        title: "Jogo Base (13 conquistas — 1000G)",
+        items: [
+          {id:"ln1_prison", name:"The Prison", gs:50, desc:"Look how the canary has flown its cage!", tip:"Automática: termine o Capítulo 1 (A Prisão)."},
+          {id:"ln1_lair", name:"The Lair", gs:50, desc:"Little lost things sometimes find their way home.", tip:"Automática: termine o Capítulo 2 (O Covil)."},
+          {id:"ln1_kitchen", name:"The Kitchen", gs:50, desc:"The Chefs will miss you!", tip:"Automática: termine o Capítulo 3 (A Cozinha)."},
+          {id:"ln1_guest", name:"The Guest Area", gs:50, desc:"Little fox among hungry wolves.", tip:"Automática: termine o Capítulo 4 (A Área de Hóspedes)."},
+          {id:"ln1_lady", name:"The Lady's Quarters", gs:50, desc:"A storm is coming. That coat should come in useful.", tip:"Automática: termine o Capítulo 5 e finalize o jogo."},
+          {id:"ln1_lost", name:"Little Lost Things", gs:50, desc:"Kindness will be your undoing!", tip:"Abrace todos os 13 Nomes espalhados pelos 5 capítulos. Eles fogem — persiga até pararem para poder abraçá-los."},
+          {id:"ln1_rascal", name:"Rascal", gs:50, desc:"Little vandal, little beast, The Maw will punish you at the feast.", tip:"Encontre e quebre todas as 10 estatuetas (bonecas geixa) jogando-as no chão."},
+          {id:"ln1_light", name:"Light Up Your Life", gs:50, desc:"Not all lights can be trusted, but these should be quite safe!", tip:"Acenda pelo menos 13 das 20 lanternas/velas com seu isqueiro."},
+          {id:"ln1_sprung", name:"Highly Sprung", gs:50, desc:"Conquista secreta.", tip:"Pule em cima de qualquer cama 6 vezes seguidas (fácil de fazer nos capítulos 1 ou 2)."},
+          {id:"ln1_elusive", name:"Elusive", gs:50, desc:"Hey sneaky rat, how do you keep slipping away?", tip:"Escape do agarrão de um perseguidor (o Homem Cego, no Cap. 1/4) 5 vezes sem ser pego — fique perto dele e saia da visão no último instante."},
+          {id:"ln1_song", name:"Six's Song", gs:150, desc:"Conquista secreta.", tip:"No Capítulo 2, suba no piano pendurado e corra de um lado para o outro sobre as cordas até tocar a musiquinha."},
+          {id:"ln1_kitchenhand", name:"Kitchen Hand", gs:150, desc:"Conquista secreta.", tip:"No Capítulo 3, jogue 3 ingredientes diferentes na panela sobre o fogo antes de seguir em frente."},
+          {id:"ln1_hardcore", name:"Hard to the Core", gs:200, desc:"What's different about you? Why are you so brave?", tip:"Termine o jogo em menos de 1 hora sem morrer nenhuma vez. Pausar não conta contra o tempo; evite coletáveis nessa run."},
+        ]
+      },
+      {
+        title: "DLC: Segredos do Maw — The Depths (3 conquistas)",
+        items: [
+          {id:"ln1_notalone", name:"Not Alone", gs:100, desc:"What's new with you?", tip:"Encontre as 5 garrafas com mensagens escondidas ao longo do capítulo The Depths."},
+          {id:"ln1_fungames", name:"Fun and Games Ahead", gs:100, desc:"Conquista secreta.", tip:"Encontre a bola de ataduras escondida num canto e jogue-a na lata de lixo."},
+          {id:"ln1_soclose", name:"So Close", gs:100, desc:"Conquista de progresso.", tip:"Automática: termine o capítulo The Depths."},
+        ]
+      },
+      {
+        title: "DLC: Segredos do Maw — The Hideaway (3 conquistas)",
+        items: [
+          {id:"ln1_ashesmaw", name:"Ashes in The Maw", gs:100, desc:"Conquista secreta.", tip:"Pegue o Nome de madeira e jogue-o dentro da fornalha na sala das caldeiras."},
+          {id:"ln1_anybody", name:"Is Anybody Out There", gs:100, desc:"Conquista de coletável.", tip:"Encontre as 5 garrafas com mensagens escondidas no capítulo The Hideaway."},
+          {id:"ln1_endinsight", name:"End In Sight", gs:100, desc:"Conquista de progresso.", tip:"Automática: termine o capítulo The Hideaway (chegue ao elevador final)."},
+        ]
+      },
+      {
+        title: "DLC: Segredos do Maw — The Residence (3 conquistas)",
+        items: [
+          {id:"ln1_ashes2ashes", name:"Ashes to Ashes", gs:100, desc:"Conquista secreta.", tip:"Resolva o quebra-cabeça dos livros na biblioteca, pegue o livro certo (capa marrom-avermelhada com máscara dourada), use-o para afugentar as 3 criaturas de sombra e leve-o até a estante perto do elevador para abrir uma sala secreta; dentro dela, derrube o vaso da mesa."},
+          {id:"ln1_losingyou", name:"I'm Losing You", gs:100, desc:"Conquista de coletável.", tip:"Encontre as 5 garrafas com mensagens escondidas no capítulo The Residence."},
+          {id:"ln1_meetagain", name:"We'll Meet Again", gs:100, desc:"Conquista de progresso.", tip:"Automática: termine o capítulo The Residence e finalize toda a DLC."},
+        ]
+      },
+    ]
+  },
+  ln2: {
+    label: "Little Nightmares II",
+    sections: [
+      {
+        title: "Progresso da História (5 conquistas)",
+        items: [
+          {id:"ln2_foraged", name:"Foraged", gs:30, desc:"Nature is a terrifying thing.", tip:"Automática: termine o Capítulo 1 (Floresta / A Caça)."},
+          {id:"ln2_schooled", name:"Schooled", gs:30, desc:"Best days of our short, terrible life.", tip:"Automática: termine o Capítulo 2 (A Escola)."},
+          {id:"ln2_hospitalised", name:"Hospitalised", gs:30, desc:"Are you sure you don't need any further… treatments?", tip:"Automática: termine o Capítulo 3 (O Hospital)."},
+          {id:"ln2_paled", name:"Paled", gs:30, desc:"Life in the big city is all over.", tip:"Automática: termine o Capítulo 4 (A Cidade Pálida)."},
+          {id:"ln2_signal", name:"Signal Interruption", gs:60, desc:"It's all over now.", tip:"Automática: termine o Capítulo 5 e finalize o jogo (Torre do Sinal)."},
+        ]
+      },
+      {
+        title: "Colecionáveis — Restos Cintilantes (4 conquistas)",
+        items: [
+          {id:"ln2_wildkids", name:"Wild Kids", gs:30, desc:"Nothing of us remains in the wilderness.", tip:"Encontre todos os 'restos cintilantes' (glitching remains) escondidos na Floresta (Capítulo 1)."},
+          {id:"ln2_schoolkids", name:"School Kids", gs:30, desc:"Nothing of us remains at the school.", tip:"Encontre todos os restos cintilantes escondidos na Escola (Capítulo 2)."},
+          {id:"ln2_sickkids", name:"Sick Kids", gs:30, desc:"Nothing of us remains in the hospital.", tip:"Encontre todos os restos cintilantes escondidos no Hospital (Capítulo 3)."},
+          {id:"ln2_palekids", name:"Pale Kids", gs:30, desc:"Nothing of us remains in the pale city.", tip:"Encontre todos os restos cintilantes escondidos na Cidade Pálida (Capítulo 4)."},
+        ]
+      },
+      {
+        title: "Chapéus e Aparência (2 conquistas)",
+        items: [
+          {id:"ln2_halfhat", name:"Half Hat", gs:20, desc:"It would be cliche to collect them all.", tip:"Colete o conjunto de chapéus escondidos espalhados pelo jogo (cada capítulo tem os seus)."},
+          {id:"ln2_howdoilook", name:"How Do I Look?", gs:15, desc:"Perfect! It's so… you!", tip:"Vista qualquer chapéu coletado pela primeira vez (segure o botão de interação sobre o chapéu no chão)."},
+        ]
+      },
+      {
+        title: "Marcos da História e Segredos",
+        items: [
+          {id:"ln2_toysforkids", name:"Toys Are For Kids", gs:15, desc:"There, you'll be much warmer now.", tip:"Vista uma roupa/disfarce específico em um manequim ou boneco durante a história (Capítulo 2, na Escola)."},
+          {id:"ln2_hunger", name:"Hunger", gs:15, desc:"Plenty of snacks for a growing boy.", tip:"Alimente-se de algo opcional (comida escondida) durante a jornada de Mono."},
+          {id:"ln2_xbestfriends", name:"X Best Friends", gs:15, desc:"I see through you…", tip:"Use a cabeça de TV para enxergar através de uma parede/objeto num momento específico."},
+          {id:"ln2_staydead", name:"…And Stay Dead!", gs:15, desc:"Better to be safe than sorry.", tip:"Desfira o golpe final em um inimigo já derrubado, garantindo que não se levante de novo."},
+          {id:"ln2_noharm", name:"First do no harm", gs:15, desc:"It's crueller to let him live.", tip:"Escolha poupar um inimigo específico em vez de terminar o combate contra ele (o oposto de '…And Stay Dead!')."},
+          {id:"ln2_referee", name:"Referee!", gs:15, desc:"Unorthodox, but they all count!", tip:"Na sequência dos bonecos/boliche, derrube vários alvos de uma vez com um único golpe."},
+          {id:"ln2_monotones", name:"Mono Tones", gs:15, desc:"My, what a curious song you play!", tip:"Toque o piano encontrado ao longo do caminho."},
+          {id:"ln2_flyfree", name:"Fly Free", gs:15, desc:"Rebellion at its finest!", tip:"Solte o pássaro preso na gaiola em um dos capítulos iniciais."},
+          {id:"ln2_truecolours", name:"True Colours", gs:15, desc:"You never know when you need protection from the elements.", tip:"Vista a capa de chuva amarela (a mesma de Six) assim que ela estiver disponível."},
+          {id:"ln2_fairprey", name:"Fair Prey", gs:15, desc:"It's not murder if they're bad people… is it?", tip:"Derrote um dos inimigos humanos hostis (caçadores) usando o ambiente ou uma arma."},
+          {id:"ln2_medicineball", name:"Medicine Ball", gs:15, desc:"Any other last requests?", tip:"Derrote a Enfermeira (chefe do Hospital) usando a bola medicinal nela."},
+          {id:"ln2_twentysix", name:"Twenty-Six", gs:20, desc:"Relax, she heard you!", tip:"Interaja/chame a atenção de Six em um momento específico perto do final do jogo."},
+          {id:"ln2_whatsinbox", name:"What's In The Box?!", gs:20, desc:"What did you expect to see in there?", tip:"Abra a televisão/caixa misteriosa escondida em um dos ambientes."},
+          {id:"ln2_mercifulfeat", name:"Merciful Feat", gs:20, desc:"Tempting, so tempting…", tip:"Resista à tentação e não elimine um inimigo/personagem em um momento-chave da história."},
+          {id:"ln2_unladylike", name:"Unladylike", gs:30, desc:"Hello, have we met?", tip:"Encontro secreto/opcional com Six em algum ponto específico do jogo."},
+        ]
+      },
+      {
+        title: "Platina (1 conquista)",
+        items: [
+          {id:"ln2_content", name:"Content Consumer", gs:80, desc:"Your life is now free of challenges. Congratulations.", tip:"Desbloqueie todas as outras 34 conquistas do jogo."},
+        ]
+      },
+    ]
+  }
+};
+
+// ===================== ESTADO / LOCALSTORAGE =====================
+const STORAGE_KEY = "ln_tracker_state_v1";
+const CUSTOM_KEY = "ln_tracker_custom_v1";
+
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveState(state){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+function loadCustom(){
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY)) || {ln1:[], ln2:[]}; }
+  catch(e){ return {ln1:[], ln2:[]}; }
+}
+function saveCustom(custom){
+  localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom));
+}
+
+let state = loadState();
+let custom = loadCustom();
+
+function allItemsForGame(gameKey){
+  const sections = DATA[gameKey].sections.map(s => ({title:s.title, items:[...s.items]}));
+  const customItems = custom[gameKey] || [];
+  if(customItems.length){
+    sections.push({title:"Adicionadas por você", items:customItems});
+  }
+  return sections;
+}
+
+function toggle(id){
+  state[id] = !state[id];
+  saveState(state);
+  renderAll();
+}
+
+function toggleTip(btn){
+  const box = btn.parentElement.nextElementSibling;
+  box.classList.toggle("show");
+  btn.textContent = box.classList.contains("show") ? "Ocultar dica" : "Mostrar dica";
+}
+
+function deleteCustom(gameKey, id){
+  custom[gameKey] = (custom[gameKey]||[]).filter(i => i.id !== id);
+  saveCustom(custom);
+  delete state[id];
+  saveState(state);
+  renderAll();
+}
+
+function addCustom(gameKey){
+  const nameInput = document.getElementById("add_name_"+gameKey);
+  const descInput = document.getElementById("add_desc_"+gameKey);
+  const tipInput = document.getElementById("add_tip_"+gameKey);
+  const gsInput = document.getElementById("add_gs_"+gameKey);
+  const name = nameInput.value.trim();
+  if(!name) return;
+  const id = "custom_"+gameKey+"_"+Date.now();
+  custom[gameKey] = custom[gameKey] || [];
+  custom[gameKey].push({
+    id, name,
+    gs: parseInt(gsInput.value)||0,
+    desc: descInput.value.trim() || "—",
+    tip: tipInput.value.trim() || "—"
+  });
+  saveCustom(custom);
+  nameInput.value=""; descInput.value=""; tipInput.value=""; gsInput.value="";
+  renderAll();
+}
+
+function resetAll(){
+  if(confirm("Isso vai desmarcar TODAS as conquistas (o jogo base e as personalizadas não serão apagadas, só o progresso). Continuar?")){
+    state = {};
+    saveState(state);
+    renderAll();
+  }
+}
+
+// ===================== RENDER =====================
+function computeProgress(gameKey){
+  const sections = allItemsForGame(gameKey);
+  let total=0, done=0;
+  sections.forEach(s => s.items.forEach(i => {
+    total++;
+    if(state[i.id]) done++;
+  }));
+  return {total, done};
+}
+
+function renderOverview(){
+  const ov = document.getElementById("overview");
+  const p1 = computeProgress("ln1");
+  const p2 = computeProgress("ln2");
+  const totalAll = p1.total + p2.total;
+  const doneAll = p1.done + p2.done;
+  const pct = n => n.total ? Math.round(100*n.done/n.total) : 0;
+
+  ov.innerHTML = `
+    <div class="card">
+      <h3>Geral (LN I + LN II) <span class="pct">${pct({total:totalAll,done:doneAll})}%</span></h3>
+      <div class="bar"><div style="width:${pct({total:totalAll,done:doneAll})}%"></div></div>
+      <small>${doneAll} de ${totalAll} conquistas obtidas</small>
+    </div>
+    <div class="card">
+      <h3>Little Nightmares I <span class="pct">${pct(p1)}%</span></h3>
+      <div class="bar"><div style="width:${pct(p1)}%"></div></div>
+      <small>${p1.done} de ${p1.total} conquistas</small>
+    </div>
+    <div class="card">
+      <h3>Little Nightmares II <span class="pct">${pct(p2)}%</span></h3>
+      <div class="bar"><div style="width:${pct(p2)}%"></div></div>
+      <small>${p2.done} de ${p2.total} conquistas</small>
+    </div>
+  `;
+}
+
+function renderGame(gameKey){
+  const sections = allItemsForGame(gameKey);
+  let html = "";
+  sections.forEach(section => {
+    const total = section.items.length;
+    const done = section.items.filter(i => state[i.id]).length;
+    html += `<div class="section">
+      <div class="section-head">
+        <h2>${section.title}</h2>
+        <span class="count">${done}/${total}</span>
+      </div>`;
+    section.items.forEach(item => {
+      const isDone = !!state[item.id];
+      const isCustom = item.id.startsWith("custom_");
+      html += `
+        <div class="ach ${isDone?'done':''}">
+          <div class="ach-top">
+            <div class="chk" onclick="toggle('${item.id}')">${isDone?'✓':''}</div>
+            <div class="ach-body">
+              <div class="ach-name">${item.name}${item.gs?`<span class="gs">${item.gs}G</span>`:''}</div>
+              <div class="ach-desc">"${item.desc}"</div>
+              <div class="ach-actions">
+                <button class="tip-btn" onclick="toggleTip(this)">Mostrar dica</button>
+                ${isCustom?`<button class="del-btn" onclick="deleteCustom('${gameKey}','${item.id}')">Remover</button>`:''}
+              </div>
+              <div class="tip-box">${item.tip}</div>
+            </div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  });
+
+  html += `
+    <button class="add-toggle" onclick="document.getElementById('addform_${gameKey}').style.display = document.getElementById('addform_${gameKey}').style.display==='block'?'none':'block'">+ Adicionar conquista manualmente</button>
+    <div class="add-form" id="addform_${gameKey}" style="display:none">
+      <input id="add_name_${gameKey}" placeholder="Nome da conquista">
+      <input id="add_gs_${gameKey}" placeholder="Gamerscore (ex: 20)" type="number">
+      <textarea id="add_desc_${gameKey}" placeholder="Descrição oficial" rows="2"></textarea>
+      <textarea id="add_tip_${gameKey}" placeholder="Dica de como conseguir" rows="2"></textarea>
+      <button onclick="addCustom('${gameKey}')">Salvar conquista</button>
+    </div>
+  `;
+
+  return html;
+}
+
+function renderAll(){
+  renderOverview();
+  const main = document.getElementById("main");
+  main.innerHTML = `
+    <div class="game-block ${activeGame==='ln1'?'active':''}" id="block_ln1">${renderGame('ln1')}</div>
+    <div class="game-block ${activeGame==='ln2'?'active':''}" id="block_ln2">${renderGame('ln2')}</div>
+  `;
+}
+
+let activeGame = "ln1";
+document.getElementById("tabs").addEventListener("click", e => {
+  if(e.target.classList.contains("tab-btn")){
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    e.target.classList.add("active");
+    activeGame = e.target.dataset.game;
+    document.querySelectorAll(".game-block").forEach(b=>b.classList.remove("active"));
+    document.getElementById("block_"+activeGame).classList.add("active");
+  }
+});
+
+renderAll();
+</script>
+</body>
+</html>
